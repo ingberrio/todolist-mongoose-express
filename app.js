@@ -2,9 +2,17 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const { MONGODB_URL } = process.env
+var _ = require('lodash');
+const config = require('./config');
+
+
+
+const { db: { host, port } } = config;
 
 // Create an instance of Express app
 const app = express();
+
 
 // Set view engine to EJS
 app.set('view engine', 'ejs');
@@ -40,8 +48,8 @@ const item2 = new Item({
 const listsFound = [item1, item2]
 
 
-// Connect to the MongoDB database
-mongoose.connect("mongodb://127.0.0.1:27017/todolistDB", {
+// Connect to the MongoDB database change MONGODB_URL for `${host}` if you need local connection
+mongoose.connect( MONGODB_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
@@ -49,7 +57,7 @@ mongoose.connect("mongodb://127.0.0.1:27017/todolistDB", {
   console.log("Connected to MongoDB");
 
   // Start the Express server
-  app.listen(3000, function() {
+  app.listen(`${port}`, function() {
     console.log("Server started on port 3000");
   });
 })
@@ -148,8 +156,7 @@ app.post("/delete", async function(req, res) {
 app.get("/:customListName", async function(req, res) {
   try {
     // Extract the new url param from the request body
-    let customListName = req.params.customListName;
-    
+    let customListName = _.capitalize(req.params.customListName);    
     // Find name item using the Item model
     const foundList = await List.findOne({ name: customListName });
 
