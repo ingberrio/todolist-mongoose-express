@@ -2,11 +2,13 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const { MONGODB_URL } = process.env
-var _ = require('lodash');
 const config = require('./config');
 
+const dotenv = require('dotenv')
+dotenv.config({path:__dirname+'/.env'});
+const { MONGODB_URL } = process.env
 
+var _ = require('lodash');
 
 const { db: { host, port } } = config;
 
@@ -57,7 +59,7 @@ mongoose.connect( MONGODB_URL, {
   console.log("Connected to MongoDB");
 
   // Start the Express server
-  app.listen(`${port}`, function() {
+  app.listen(3000, function() {
     console.log("Server started on port 3000");
   });
 })
