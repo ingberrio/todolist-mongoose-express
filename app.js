@@ -96,10 +96,10 @@ app.post("/", async function(req, res) {
         res.redirect("/" + listName);
       }else{
         const foundList = await List.findOne({ name: listName });
-        await List.updateOne(
-          { name: foundList.name},
-          { $push: { items: await List.create({ name: itemName }) } }, // Push the new item into the "items" array
-        )
+        await List.updateOne({
+          name: foundList.name,
+          $push: { items: { name: itemName }}, // Push the new item into the "items" array
+        })
         console.log("Create a new item using the Item model")
         res.redirect("/" + listName);
       }
@@ -117,14 +117,27 @@ app.post("/", async function(req, res) {
 app.post("/delete", async function(req, res) {
   try {
     // Extract the new item's id checkbox from the request body
-    const listName = req.body.listItem;
-    
-    // Delete a item using the Item model
-    await Item.deleteOne({ _id: listName });
+    const listItem = req.body.listItem;
+    const listName = req.body.listName;
+    console.log(listItem)
+    console.log(listName)
 
-    console.log("Item deleted successfully");
+    // Delete a item using the Item model
+    if (listName === "Today"){
+      await Item.deleteOne({ _id: listItem });
+      res.redirect("/");
+      console.log("Item deleted successfully");
+    }else{  
+      await List.updateOne({
+         name: listName, 
+         $pull: { items: { _id: listItem } }, 
+      });
+      res.redirect("/" + listName);
+      console.log("Item list deleted successfully");
+    }
+    
     // Redirect to the home page
-    res.redirect("/");
+    
   } catch (error) {
     console.error("Error delete item:", error);
     res.status(500).send("Internal Server Error");
