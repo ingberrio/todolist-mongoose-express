@@ -19,9 +19,26 @@ app.use(express.static("public"));
 const itemSchema = {
   name: String,
 };
-
 // Create an "Item" model based on the itemSchema
 const Item = mongoose.model("item", itemSchema);
+
+const listSchema = {
+  name: String,
+  items: [{name: String}]
+};
+
+// Create an "Item" model based on the itemSchema
+const List = mongoose.model("list", listSchema);
+
+const item1 = new Item({
+  name: "edu"
+})
+const item2 = new Item({
+  name: "ber"
+})
+
+const listsFound = [item1, item2]
+
 
 // Connect to the MongoDB database
 mongoose.connect("mongodb://127.0.0.1:27017/todolistDB", {
@@ -47,6 +64,7 @@ app.get("/", async function(req, res) {
     const itemsFound = await Item.find({});
     // Render the "list" view with the fetched items
     res.render("list", { listTitle: "Today", newListItems: itemsFound });
+    
   } catch (error) {
     console.error("Error fetching items:", error);
     res.status(500).send("Internal Server Error");
@@ -58,12 +76,37 @@ app.post("/", async function(req, res) {
   try {
     // Extract the new item's name from the request body
     let itemName = req.body.newItem;
-    // Create a new item using the Item model
-    await Item.create({ name: itemName });
+    console.log(itemName);
+    let listName = req.body.list;
 
+    if (listName === "Today"){
+      // Create a new item using the Item model
+      await Item.create({ name: itemName });
+      console.log("Create a new item using the Item model")
+      res.redirect("/");
+    }else{
+      // Find name item using the Item model
+      const foundList = await List.findOne({ name: listName });
+      console.log(foundList);
+      if (!foundList){
+        await List.create({
+          name: listName,
+          items: foundList
+        })
+        res.redirect("/" + listName);
+      }else{
+        const foundList = await List.findOne({ name: listName });
+        await List.updateOne(
+          { name: foundList.name},
+          { $push: { items: await List.create({ name: itemName }) } }, // Push the new item into the "items" array
+        )
+        console.log("Create a new item using the Item model")
+        res.redirect("/" + listName);
+      }
+    }
     console.log("Item saved successfully");
     // Redirect to the home page
-    res.redirect("/");
+    
   } catch (error) {
     console.error("Error saving item:", error);
     res.status(500).send("Internal Server Error");
@@ -89,6 +132,31 @@ app.post("/delete", async function(req, res) {
 });
 
 // Route to render the "about" page
-app.get("/about", function(req, res) {
-  res.render("about");
+app.get("/:customListName", async function(req, res) {
+  try {
+    // Extract the new url param from the request body
+    let customListName = req.params.customListName;
+    
+    // Find name item using the Item model
+    const foundList = await List.findOne({ name: customListName });
+
+    if(!foundList){
+      await List.create({
+        name: customListName,
+        items: listsFound
+      })
+      console.log("List saved successfully");
+      res.redirect("/" + customListName)
+    }else{
+      if (listsFound.length > 0){
+        res.render("list", { listTitle: foundList.name, newListItems: foundList.items });
+      }
+    }
+
+    console.log("Route fund successfully");
+    
+  } catch (error) {
+    console.error("Error delete item:", error);
+    res.status(500).send("Internal Server Error");
+  }
 });
